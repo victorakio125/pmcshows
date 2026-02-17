@@ -104,9 +104,6 @@
         <button onclick="reiniciarEscaner()" id="btnReset">Siguiente Asistente</button>
     </div>
 
-        <button onclick="logout()" style="margin-top: 50px; background: #666; width: auto; padding: 10px 20px;">
-    Cerrar Sesión 🚪
-
     <script>
         // --- 1. CONFIGURACIÓN FIREBASE ---
         const firebaseConfig = {
@@ -228,6 +225,10 @@
             false
         );
         html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            <button onclick="logout()" style="margin-top: 50px; background: #666; width: auto; padding: 10px 20px;">
+    Cerrar Sesión 🚪
+</button>
+
     </script>
         <script>
             function logout() {
