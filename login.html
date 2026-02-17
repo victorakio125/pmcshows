@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - PMC Shows</title>
+    <style>
+        :root {
+            --bg: #f4f4f9;
+            --card: #ffffff;
+            --primary: #007bff;
+            --text: #333;
+            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .login-card { background: var(--card); padding: 40px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 350px; text-align: center; }
+        h2 { margin-bottom: 25px; color: var(--text); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        .error { color: #dc3545; font-size: 14px; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>🔐 Acceso al Sistema</h2>
+    <input type="text" id="userInput" placeholder="Usuario">
+    <input type="password" id="passInput" placeholder="Contraseña">
+    <button onclick="validarAcceso()">Entrar</button>
+    <div id="errorMsg" class="error">Credenciales incorrectas</div>
+</div>
+
+<script>
+    function validarAcceso() {
+        const user = document.getElementById("userInput").value;
+        const pass = document.getElementById("passInput").value;
+        const error = document.getElementById("errorMsg");
+
+        // --- LÓGICA DE PERFILES ---
+        
+        // 1. Perfil Administrador (Tú: Acceso total)
+        if (user === "admin" && pass === "Husky@125") {
+            sessionStorage.setItem("rol", "admin");
+            window.location.href = "index.html"; // Vas al menú principal
+        } 
+        // 2. Perfil Porteros (Solo escáner)
+        else if (user === "portero" && pass === "staff2026") {
+            sessionStorage.setItem("rol", "staff");
+            window.location.href = "escaner.html"; // Van directo al escáner
+        } 
+        else {
+            error.style.display = "block";
+        }
+    }
+</script>
+</body>
+</html>

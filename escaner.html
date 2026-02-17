@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portero Pro - Escáner</title>
+        <script>
+        if (!sessionStorage.getItem("rol")) {
+            window.location.href = "login.html";
+        }
+    </script>
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<style>
+    /* TEMA: PROFESSIONAL BLUE (Scanner) */
+    :root {
+        --bg-color: #f4f4f9;
+        --card-bg: #ffffff;
+        --primary: #007bff;
+        --text: #333333;
+        --border: #e0e0e0;
+        --shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    body { 
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+        text-align: center; 
+        background-color: var(--bg-color); 
+        color: var(--text); 
+        padding: 30px 20px; 
+        margin: 0;
+        min-height: 100vh;
+        display: flex; justify-content: center; align-items: flex-start;
+    }
+
+    .container { 
+        background: var(--card-bg); 
+        width: 100%;
+        max-width: 500px; 
+        padding: 30px; 
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-top: 30px;
+    }
+
+    h2 { color: var(--text); font-weight: 600; margin-bottom: 25px; }
+
+    #reader { 
+        width: 100%; 
+        background-color: #f8f9fa; 
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        overflow: hidden; 
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
+        margin-bottom: 25px;
+    }
+    
+    #reader * { color: var(--text); }
+    #reader button { 
+        background: var(--bg-color) !important; border: 1px solid var(--border) !important; 
+        color: var(--text) !important; padding: 8px 12px !important; border-radius: 4px !important; 
+    }
+
+    #resultado { 
+        margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 1.1em; font-weight: 500; display: none;
+    }
+    
+    .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .alerta { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+
+    button#btnReset { 
+        width: 100%; padding: 14px; border: none; border-radius: 6px;
+        background-color: var(--text); 
+        color: white; font-weight: 600; font-size: 16px; cursor: pointer; 
+        margin-top: 20px; display: none;
+    }
+    button#btnReset:hover { background-color: #000; }
+
+    .nombre-gigante {
+        display: block;
+        font-size: 1.8em;    
+        font-weight: 700;    
+        margin: 10px 0;      
+        text-transform: capitalize; 
+        color: #333;          
+        border-bottom: 1px solid rgba(0,0,0,0.1); 
+        padding-bottom: 10px;
+    }
+    
+    .exito .nombre-gigante { color: #155724; border-color: #c3e6cb; }
+</style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>👁️‍🗨️ Control de Acceso</h2>
+        <div id="reader"></div>
+        <div id="resultado">Esperando...</div>
+        <button onclick="reiniciarEscaner()" id="btnReset">Siguiente Asistente</button>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN FIREBASE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOG97oCLCpAAN6fUzHRwkyev1pC_Kdx1I",
+            authDomain: "pmcshows-40113.firebaseapp.com",
+            projectId: "pmcshows-40113",
+            storageBucket: "pmcshows-40113.firebasestorage.app",
+            messagingSenderId: "979468863982",
+            appId: "1:979468863982:web:2e307aea5f0a0f8f86e6ff"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- 2. LÓGICA DEL ESCÁNER ---
+        let html5QrcodeScanner;
+        let escaneoPausado = false; 
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (escaneoPausado) return;
+            escaneoPausado = true; 
+            console.log(`Código detectado: ${decodedText}`);
+            verificarTicket(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // Ignoramos errores de tracking
+        }
+
+        // --- 3. VERIFICACIÓN CON TEMPORIZADOR (ANTI-CONGELAMIENTO) ---
+        async function verificarTicket(ticketId) {
+            console.log("Iniciando verificación...");
+            
+            const resultadoDiv = document.getElementById("resultado");
+            const btnReset = document.getElementById("btnReset");
+
+            // Mostrar estado de carga
+            resultadoDiv.style.display = "block";
+            resultadoDiv.className = ""; 
+            resultadoDiv.innerHTML = "⏳ Conectando con la base de datos...";
+            btnReset.style.display = "none";
+
+            try {
+                if (!ticketId) throw new Error("QR vacío");
+
+                const docRef = db.collection("tickets").doc(ticketId);
+
+                // --- TRUCO: Si tarda más de 5 seg, lanzamos error manual ---
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("TIEMPO DE ESPERA AGOTADO: Revisa tu internet")), 5000)
+                );
+
+                // Carrera: Base de datos vs Reloj
+                const docSnap = await Promise.race([
+                    docRef.get(),
+                    timeoutPromise
+                ]);
+
+                // Si llegamos aquí, respondió a tiempo
+                if (!docSnap.exists) {
+                    mostrarMensaje("❌ TICKET INVÁLIDO<br><small>No existe en el sistema</small>", "error");
+                } else {
+                    const data = docSnap.data();
+                    
+                    if (data.usado === true) {
+                        let hora = "Hora desconocida";
+                        try { hora = new Date(data.fecha_uso).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); } catch(e){}
+
+                        mostrarMensaje(`
+                            ⚠️ YA REGISTRADO
+                            <div class="nombre-gigante" style="color: #856404">${data.nombre}</div>
+                            <small>Entró a las ${hora}</small>
+                        `, "alerta");
+                    } else {
+                        // Ticket Válido -> Marcar como usado
+                        await docRef.update({ 
+                            usado: true, 
+                            fecha_uso: new Date().toISOString() 
+                        });
+                        
+                        mostrarMensaje(`
+                            ✅ ACCESO CONCEDIDO
+                            <div class="nombre-gigante">${data.nombre}</div>
+                            <small>✨ Bienvenido al evento ✨</small>
+                        `, "exito");
+                    }
+                }
+
+            } catch (error) {
+                console.error("ERROR:", error);
+                
+                // Mensaje amigable según el error
+                let msg = error.message;
+                if (error.code === 'permission-denied') msg = "Permisos denegados (Base de datos cerrada)";
+                if (error.code === 'unavailable') msg = "Sin conexión a internet";
+                
+                mostrarMensaje(`💀 ERROR DE CONEXIÓN<br><small>${msg}</small>`, "error");
+            }
+            
+            btnReset.style.display = "inline-block";
+        }
+
+        function mostrarMensaje(texto, clase) {
+            const div = document.getElementById("resultado");
+            div.innerHTML = texto;
+            div.className = clase;
+        }
+
+        function reiniciarEscaner() {
+            escaneoPausado = false;
+            document.getElementById("resultado").style.display = "none";
+            document.getElementById("btnReset").style.display = "none";
+        }
+
+        // --- 4. INICIAR CÁMARA ---
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { fps: 10, qrbox: {width: 250, height: 250} },
+            false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
+</body>
+</html>
