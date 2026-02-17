@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - Evento</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<style>
+    /* TEMA: PROFESSIONAL BLUE (Dashboard) */
+    :root { --bg: #f4f4f9; --card: #ffffff; --primary: #007bff; --text: #333; --secondary: #666; --shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 40px 20px; text-align: center; }
+    h1 { color: var(--text); font-weight: 600; margin-bottom: 40px; }
+    
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 25px; max-width: 900px; margin: 0 auto 40px auto; }
+    
+    .card { 
+        background: var(--card); padding: 30px; border-radius: 12px; 
+        box-shadow: var(--shadow); border: 1px solid #e0e0e0; 
+        transition: transform 0.2s;
+    }
+    .card:hover { transform: translateY(-3px); }
+
+    .number { font-size: 3.5em; font-weight: 700; color: var(--primary); margin: 15px 0; line-height: 1; }
+    .label { color: var(--secondary); font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    
+    .chart-container {
+        background: var(--card); padding: 30px; border-radius: 12px;
+        box-shadow: var(--shadow); border: 1px solid #e0e0e0;
+        max-width: 700px; margin: 0 auto;
+    }
+    canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+
+    <h1>📊 Panel en Vivo</h1>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="label">Entradas Vendidas</div>
+            <div class="number" id="totalVendidos">0</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Personas Ingresadas</div>
+            <div class="number" id="totalIngresados" style="color: var(--primary)">0</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px; max-width: 800px; margin-left: auto; margin-right: auto;">
+        <canvas id="miGrafica"></canvas>
+    </div>
+
+    <script>
+        // --- 1. TU FIREBASE CONFIG (Pégala aquí) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOG97oCLCpAAN6fUzHRwkyev1pC_Kdx1I",
+            authDomain: "pmcshows-40113.firebaseapp.com",
+            projectId: "pmcshows-40113",
+            storageBucket: "pmcshows-40113.firebasestorage.app",
+            messagingSenderId: "979468863982",
+            appId: "1:979468863982:web:2e307aea5f0a0f8f86e6ff"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // --- 2. CONFIGURACIÓN DE LA GRÁFICA ---
+        const ctx = document.getElementById('miGrafica').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'doughnut', // Tipo "Donas"
+            data: {
+                labels: ['Adentro (Usados)', 'Pendientes (Sin usar)'],
+            datasets: [{
+                data: [0, 0],
+                // CAMBIA ESTA LÍNEA PARA QUE SEA AZUL Y GRIS CLARO:
+                backgroundColor: ['#007bff', '#e9ecef'], 
+                borderWidth: 1,
+                borderColor: '#ffffff'
+            }]
+
+            
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#333' } } } }
+        });
+
+        // --- 3. ESCUCHAR CAMBIOS EN TIEMPO REAL ---
+        // onSnapshot se ejecuta cada vez que alguien compra o alguien entra
+        db.collection("tickets").onSnapshot((snapshot) => {
+            let total = snapshot.size;
+            let usados = 0;
+
+            snapshot.forEach((doc) => {
+                if (doc.data().usado === true) {
+                    usados++;
+                }
+            });
+
+            // Actualizar números en pantalla
+            document.getElementById("totalVendidos").innerText = total;
+            document.getElementById("totalIngresados").innerText = usados;
+
+            // Actualizar gráfica
+            chart.data.datasets[0].data = [usados, total - usados];
+            chart.update();
+        });
+    </script>
+</body>
+</html>
