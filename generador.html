@@ -2,115 +2,62 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scales=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Entradas - PMC Shows</title>
     
+    <script>
+        if (sessionStorage.getItem("rol") !== "admin") {
+            window.location.href = "login.html";
+        }
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
-        :root {
-            --bg-color: #f4f4f9;
-            --card-bg: #ffffff;
-            --primary: #007bff;
-            --primary-dark: #0056b3;
-            --text: #333333;
-            --secondary-text: #666666;
-            --border: #e0e0e0;
-            --shadow: 0 4px 15px rgba(0,0,0,0.08);
-        }
-
-        body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            text-align: center; 
-            background-color: var(--bg-color); 
-            color: var(--text); 
-            padding: 30px 20px; 
-            margin: 0;
-            min-height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        .container { 
-            background: var(--card-bg); 
-            width: 100%;
-            max-width: 420px; 
-            padding: 40px; 
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-
-        h2 { color: var(--text); font-weight: 600; margin-bottom: 25px; font-size: 1.5em; }
-
-        input { 
-            width: 100%; 
-            padding: 12px 15px; 
-            margin: 10px 0; 
-            border: 1px solid var(--border); 
-            border-radius: 6px; 
-            background: #fff; 
-            color: var(--text); 
-            font-size: 16px;
-            box-sizing: border-box;
-            transition: border-color 0.3s;
-        }
-        
-        input:focus { 
-            outline: none; 
-            border-color: var(--primary); 
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-        }
-
-        button { 
-            width: 100%; 
-            padding: 14px; 
-            border: none;
-            border-radius: 6px;
-            background-color: var(--primary);
-            color: white; 
-            font-weight: 600; 
-            font-size: 16px; 
-            cursor: pointer; 
-            margin-top: 15px;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-
-        button:hover { background-color: var(--primary-dark); transform: translateY(-1px); }
-        button:disabled { background-color: #ccc; color: #fff; cursor: not-allowed; transform: none; }
-
-        #qrcode { 
-            margin: 30px auto; 
-            padding: 20px; 
-            background: #fff; 
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            display: flex; justify-content: center; align-items: center; 
-            width: fit-content; 
-            box-shadow: var(--shadow);
-        }
-        #qrcode img { display: block; max-width: 100%; }
-
-        .ticket-info { margin-top: 20px; font-size: 0.95em; color: var(--secondary-text); line-height: 1.5; }
+        :root { --bg-color: #f4f4f9; --card-bg: #ffffff; --primary: #007bff; --primary-dark: #0056b3; --text: #333333; --border: #e0e0e0; --shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: var(--bg-color); color: var(--text); padding: 20px; margin: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .container { background: var(--card-bg); width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        h2 { font-weight: 600; margin-bottom: 20px; font-size: 1.5em; }
+        .input-group { display: flex; gap: 10px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1); }
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; background: var(--primary); color: white; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        button:hover { background: var(--primary-dark); }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #qrcode { margin: 20px auto; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: center; width: fit-content; }
+        .volver { display: block; margin-top: 15px; color: var(--secondary-text); text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🎟️ Venta de Entrada</h2>
-        <input type="text" id="nombreCliente" placeholder="Nombre del Asistente (Ej: Akio)" required>
+        <h2>🎟️ Generar Entrada</h2>
+        
+        <input type="text" id="nombreCliente" placeholder="Nombre del Cliente" required>
         <input type="email" id="emailInput" placeholder="Correo electrónico" required>
         
-        <button onclick="generarTicket()">Pagar y Generar QR</button>
+        <input type="text" id="eventoInput" list="listaEventos" placeholder="Nombre del Evento (Escribe o selecciona)" required>
+        <datalist id="listaEventos"></datalist>
+
+        <div class="input-group">
+            <input type="text" id="tipoInput" list="listaTipos" placeholder="Tipo (Ej: VIP)" required>
+            <datalist id="listaTipos"></datalist>
+            
+            <input type="number" id="precioInput" placeholder="Precio (S/)" required min="0" step="0.50">
+        </div>
+        
+        <button onclick="generarTicket()">Registrar y Enviar</button>
         
         <div id="qrcode"></div>
-        <div id="mensaje" class="ticket-info"></div>
+        <div id="mensaje" style="font-size: 14px; color: #666; margin-top: 10px;"></div>
+        
+        <a href="index.html" class="volver">← Volver al Menú</a>
     </div>
 
-<script>
-        // --- 1. CONFIGURACIÓN FIREBASE ---
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBOG97oCLCpAAN6fUzHRwkyev1pC_Kdx1I",
             authDomain: "pmcshows-40113.firebaseapp.com",
@@ -119,68 +66,71 @@
             messagingSenderId: "979468863982",
             appId: "1:979468863982:web:2e307aea5f0a0f8f86e6ff"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
-        // --- 2. CONFIGURACIÓN EMAILJS (Tus Credenciales Actualizadas) ---
         emailjs.init("gH9NIWuvDTH_ImtQD");
 
-        // --- 3. LÓGICA DE GENERACIÓN Y ENVÍO ---
-        function generarTicket() {
-            const nombre = document.getElementById('nombreCliente').value;
-            const email = document.getElementById('emailInput').value;
+        // --- AUTOGUARDADO DE EVENTOS Y TIPOS ---
+        function cargarSugerencias() {
+            let eventos = JSON.parse(localStorage.getItem('savedEventos') || '[]');
+            let tipos = JSON.parse(localStorage.getItem('savedTipos') || '[]');
+            
+            document.getElementById('listaEventos').innerHTML = eventos.map(e => `<option value="${e}">`).join('');
+            document.getElementById('listaTipos').innerHTML = tipos.map(t => `<option value="${t}">`).join('');
+        }
+        cargarSugerencias();
 
-            if (!nombre || !email) {
-                return alert("🤘 ¡Ey! Olvidaste poner el nombre o el correo.");
-            }
+        function guardarSugerencia(evento, tipo) {
+            let eventos = JSON.parse(localStorage.getItem('savedEventos') || '[]');
+            let tipos = JSON.parse(localStorage.getItem('savedTipos') || '[]');
+            
+            if(!eventos.includes(evento)) { eventos.push(evento); localStorage.setItem('savedEventos', JSON.stringify(eventos)); }
+            if(!tipos.includes(tipo)) { tipos.push(tipo); localStorage.setItem('savedTipos', JSON.stringify(tipos)); }
+            cargarSugerencias();
+        }
+
+        function generarTicket() {
+            const nombre = document.getElementById('nombreCliente').value.trim();
+            const email = document.getElementById('emailInput').value.trim();
+            const evento = document.getElementById('eventoInput').value.trim();
+            const tipo = document.getElementById('tipoInput').value.trim();
+            const precio = parseFloat(document.getElementById('precioInput').value) || 0;
+
+            if (!nombre || !email || !evento || !tipo) return alert("Completa todos los campos 🤘");
 
             const btn = document.querySelector('button');
-            btn.disabled = true;
-            btn.innerText = "FORJANDO TICKET...";
+            btn.disabled = true; btn.innerText = "Procesando...";
 
-            // Guardar en Firestore
+            guardarSugerencia(evento, tipo); // Guarda para la próxima vez
+
             db.collection("tickets").add({
                 nombre: nombre,
                 email: email,
+                evento: evento,
+                tipo: tipo,
+                precio: precio,
                 usado: false,
                 fecha_creacion: new Date().toISOString()
             })
             .then((docRef) => {
-                // Generar QR en pantalla
                 document.getElementById("qrcode").innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), {
-                    text: docRef.id,
-                    width: 200,
-                    height: 200
-                });
+                new QRCode(document.getElementById("qrcode"), { text: docRef.id, width: 150, height: 150 });
+                document.getElementById("mensaje").innerHTML = `ID: ${docRef.id}<br>Enviando email...`;
 
-                document.getElementById("mensaje").innerHTML = `ID: ${docRef.id}<br>Enviando al correo...`;
-
-                // --- ENVÍO DE EMAIL CON TUS IDs ---
-                // Dentro de la función generarTicket()
                 const templateParams = {
                     name: nombre,
                     email_to: email,
-                    ticket_id: docRef.id, // Este ID es el que la API de arriba convertirá en imagen
+                    ticket_id: docRef.id,
+                    evento: evento,  // ¡Añadido para el correo!
+                    tipo: tipo,      // ¡Añadido para el correo!
                     date: new Date().toLocaleDateString()
                 };
 
-            return emailjs.send('service_pmcshow', 'template_dpcy38r', templateParams);
-
                 return emailjs.send('service_pmcshow', 'template_dpcy38r', templateParams);
             })
-            .then(() => {
-                alert("✅ Ticket forjado y enviado. ¡Nos vemos en el pogo! 🤘");
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-                alert("💀 Hubo un fallo en la matriz. Revisa la consola.");
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerText = "Pagar y Generar QR";
-            });
+            .then(() => alert("✅ Ticket enviado"))
+            .catch(error => console.error(error))
+            .finally(() => { btn.disabled = false; btn.innerText = "Registrar y Enviar"; });
         }
     </script>
 </body>
