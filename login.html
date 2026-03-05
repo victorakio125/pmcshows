@@ -3,55 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso - PMC Shows</title>
+    <title>Acceso Seguro - PMC Shows</title>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
     <style>
         :root {
-            --bg: #f4f4f9;
-            --card: #ffffff;
+            --bg: #121212; 
+            --card: #1e1e1e;
             --primary: #007bff;
-            --text: #333;
-            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+            --text: #e0e0e0;
+            --shadow: 0 4px 15px rgba(0,0,0,0.5);
+            --border: #333333;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .login-card { background: var(--card); padding: 40px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 350px; text-align: center; }
-        h2 { margin-bottom: 25px; color: var(--text); }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; color: var(--text); }
+        .login-card { background: var(--card); padding: 40px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 350px; text-align: center; border: 1px solid var(--border); }
+        h2 { margin-bottom: 25px; color: #ffffff; text-transform: uppercase; letter-spacing: 1px; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; background: #2a2a2a; color: white; font-size: 15px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        
+        /* --- NUEVO: Estilos para el contenedor de la contraseña y el ojito --- */
+        .password-container { 
+            position: relative; 
+            width: 100%; 
+        }
+        .password-container input { 
+            padding-right: 40px; /* Evita que el texto largo se esconda detrás del ojito */
+        }
+        .toggle-eye { 
+            position: absolute; 
+            right: 12px; 
+            top: 50%; 
+            transform: translateY(-50%); /* Centrado vertical perfecto */
+            cursor: pointer; 
+            font-size: 18px; 
+            user-select: none; /* Evita que se resalte como texto al darle doble clic */
+            transition: 0.2s;
+            opacity: 0.7;
+        }
+        .toggle-eye:hover { opacity: 1; transform: translateY(-50%) scale(1.1); }
+
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.3s; margin-top: 15px; }
         button:hover { background: #0056b3; }
-        .error { color: #dc3545; font-size: 14px; margin-top: 10px; display: none; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        
+        .error { color: #ff8a8a; font-size: 14px; margin-top: 15px; display: none; background: rgba(220, 53, 69, 0.1); padding: 10px; border-radius: 6px; border: 1px solid #dc3545; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <h2>🔐 Acceso al Sistema</h2>
-    <input type="text" id="userInput" placeholder="Usuario">
-    <input type="password" id="passInput" placeholder="Contraseña">
-    <button onclick="validarAcceso()">Entrar</button>
+    <h2>🔐 Acceso PMC</h2>
+    <input type="email" id="emailInput" placeholder="Correo de usuario">
+    
+    <div class="password-container">
+        <input type="password" id="passInput" placeholder="Contraseña">
+        <span class="toggle-eye" onclick="togglePassword()" id="eyeIcon">👁️</span>
+    </div>
+
+    <button id="btnLogin" onclick="validarAcceso()">Entrar</button>
     <div id="errorMsg" class="error">Credenciales incorrectas</div>
 </div>
 
 <script>
-    function validarAcceso() {
-        const user = document.getElementById("userInput").value;
-        const pass = document.getElementById("passInput").value;
-        const error = document.getElementById("errorMsg");
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOG97oCLCpAAN6fUzHRwkyev1pC_Kdx1I",
+        authDomain: "pmcshows-40113.firebaseapp.com",
+        projectId: "pmcshows-40113",
+        storageBucket: "pmcshows-40113.firebasestorage.app",
+        messagingSenderId: "979468863982",
+        appId: "1:979468863982:web:2e307aea5f0a0f8f86e6ff"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-        // --- LÓGICA DE PERFILES ---
+    // --- NUEVO: Función para alternar la visibilidad de la contraseña ---
+    function togglePassword() {
+        const passInput = document.getElementById("passInput");
+        const eyeIcon = document.getElementById("eyeIcon");
         
-        // 1. Perfil Administrador (Tú: Acceso total)
-        if (user === "admin" && pass === "Husky@125") {
-            sessionStorage.setItem("rol", "admin");
-            window.location.href = "index.html"; // Vas al menú principal
-        } 
-        // 2. Perfil Porteros (Solo escáner)
-        else if (user === "portero" && pass === "staff2026") {
-            sessionStorage.setItem("rol", "staff");
-            window.location.href = "escaner.html"; // Van directo al escáner
-        } 
-        else {
-            error.style.display = "block";
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            eyeIcon.innerText = "🙈"; // Monito tapándose los ojos al mostrar la clave
+        } else {
+            passInput.type = "password";
+            eyeIcon.innerText = "👁️"; // Ojito normal al ocultarla
         }
+    }
+
+    // Lógica de Autenticación Segura
+    function validarAcceso() {
+        const email = document.getElementById("emailInput").value.trim();
+        const pass = document.getElementById("passInput").value.trim();
+        const errorDiv = document.getElementById("errorMsg");
+        const btn = document.getElementById("btnLogin");
+
+        if (!email || !pass) {
+            errorDiv.innerText = "Ingresa correo y contraseña.";
+            errorDiv.style.display = "block";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Verificando...";
+        errorDiv.style.display = "none";
+
+        auth.signInWithEmailAndPassword(email, pass)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                if (user.email === "admin@pmcshows.com") {
+                    sessionStorage.setItem("rol", "admin");
+                    window.location.href = "index.html"; 
+                } else if (user.email === "portero@pmcshows.com") {
+                    sessionStorage.setItem("rol", "staff");
+                    window.location.href = "escaner.html"; 
+                }
+            })
+            .catch((error) => {
+                console.error("Error Auth:", error);
+                errorDiv.innerText = "Acceso denegado. Revisa tus datos.";
+                errorDiv.style.display = "block";
+                btn.disabled = false;
+                btn.innerText = "Entrar";
+            });
     }
 </script>
 </body>

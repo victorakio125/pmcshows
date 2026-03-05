@@ -16,32 +16,44 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
-    :root { --bg: #f4f4f9; --card: #ffffff; --primary: #007bff; --success: #28a745; --text: #333; --shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    /* TEMA: DARK METAL MODE */
+    :root { --bg: #121212; --card: #1e1e1e; --primary: #007bff; --success: #4ade80; --text: #e0e0e0; --shadow: 0 4px 15px rgba(0,0,0,0.5); --border: #333; }
     body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); padding: 30px 20px; text-align: center; margin: 0; }
     
-    .header-control { max-width: 900px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; }
-    select { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; font-weight: bold; }
+    .header-control { max-width: 900px; margin: 0 auto 30px auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    h1 { margin: 0; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+    select { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid var(--border); background: #2a2a2a; color: white; font-weight: bold; }
     
+    /* BOTÓN EXCEL */
+    .btn-exportar { background: #198754; color: white; padding: 10px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+    .btn-exportar:hover { background: #146c43; }
+
     .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto 30px auto; }
     
-    .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid #e0e0e0; transition: 0.2s; }
-    .card:hover { transform: translateY(-3px); }
+    .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); transition: 0.2s; }
+    .card:hover { transform: translateY(-3px); border-color: var(--primary); }
     
     .number { font-size: 3em; font-weight: 700; color: var(--primary); margin: 10px 0; }
     .money { color: var(--success); }
-    .label { color: #666; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .label { color: #aaaaaa; font-size: 0.9em; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
     
     .charts-container { display: flex; flex-wrap: wrap; gap: 20px; max-width: 900px; margin: auto; }
-    .chart-box { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid #e0e0e0; flex: 1; min-width: 300px; }
+    .chart-box { background: var(--card); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--border); flex: 1; min-width: 300px; }
+    
+    .btn-logout { margin-top: 40px; background: transparent; color: #dc3545; border: 1px solid #dc3545; border-radius: 6px; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+    .btn-logout:hover { background: #dc3545; color: white; }
 </style>
 </head>
 <body>
 
     <div class="header-control">
-        <h1>📊 Analíticas en Vivo</h1>
-        <select id="filtroEvento" onchange="renderizarDashboard()">
-            <option value="Todos">Todos los Eventos</option>
-        </select>
+        <h1>📊 Analíticas PMC</h1>
+        <div>
+            <select id="filtroEvento" onchange="renderizarDashboard()">
+                <option value="Todos">Todos los Eventos</option>
+            </select>
+            <button class="btn-exportar" onclick="exportarCSV()">📥 Exportar CSV</button>
+        </div>
     </div>
 
     <div class="dashboard-grid">
@@ -61,16 +73,16 @@
 
     <div class="charts-container">
         <div class="chart-box">
-            <h3 style="color:#666; margin-top:0;">Estado de Puerta</h3>
+            <h3 style="color:#aaa; margin-top:0;">Estado de Puerta</h3>
             <canvas id="graficaPuerta"></canvas>
         </div>
         <div class="chart-box">
-            <h3 style="color:#666; margin-top:0;">Ventas por Tipo</h3>
+            <h3 style="color:#aaa; margin-top:0;">Ventas por Tipo</h3>
             <canvas id="graficaTipos"></canvas>
         </div>
     </div>
 
-    <button onclick="logout()" style="margin-top: 40px; background: #dc3545; color:white; border:none; border-radius:6px; padding: 10px 20px; cursor:pointer; font-weight:bold;">Cerrar Sesión 🚪</button>
+    <button class="btn-logout" onclick="logout()">Cerrar Sesión 🚪</button>
 
     <script>
         const firebaseConfig = {
@@ -87,30 +99,30 @@
         let todosLosTickets = [];
         let chartPuerta, chartTipos;
 
-        // Inicializar Gráficas
+        // Configuración de Gráficas para Modo Oscuro
+        Chart.defaults.color = '#aaaaaa';
+        
         const ctxPuerta = document.getElementById('graficaPuerta').getContext('2d');
         chartPuerta = new Chart(ctxPuerta, {
             type: 'doughnut',
-            data: { labels: ['Ingresaron', 'Faltan'], datasets: [{ data: [0, 0], backgroundColor: ['#007bff', '#e9ecef'] }] }
+            data: { labels: ['Ingresaron', 'Faltan'], datasets: [{ data: [0, 0], backgroundColor: ['#007bff', '#333333'], borderColor: '#1e1e1e' }] }
         });
 
         const ctxTipos = document.getElementById('graficaTipos').getContext('2d');
         chartTipos = new Chart(ctxTipos, {
             type: 'bar',
-            data: { labels: [], datasets: [{ label: 'Tickets', data: [], backgroundColor: '#28a745' }] }
+            data: { labels: [], datasets: [{ label: 'Tickets', data: [], backgroundColor: '#4ade80' }] }
         });
 
-        // Escuchar Base de Datos
         db.collection("tickets").onSnapshot((snapshot) => {
             todosLosTickets = [];
             let eventosSet = new Set();
-
             snapshot.forEach((doc) => {
                 let data = doc.data();
+                data.id = doc.id; // Guardamos el ID por si acaso
                 todosLosTickets.push(data);
-                if(data.evento) eventosSet.add(data.evento); // Guardar eventos únicos
+                if(data.evento) eventosSet.add(data.evento);
             });
-
             actualizarSelectEventos(Array.from(eventosSet));
             renderizarDashboard();
         });
@@ -119,13 +131,11 @@
             const select = document.getElementById("filtroEvento");
             const actual = select.value;
             select.innerHTML = '<option value="Todos">Todos los Eventos</option>';
-            
             eventosDb.forEach(ev => {
-                let option = document.createElement("option");
-                option.value = ev; option.text = ev;
+                let option = document.createElement("option"); option.value = ev; option.text = ev;
                 select.appendChild(option);
             });
-            select.value = actual; // Mantener selección si se recarga en vivo
+            select.value = actual;
         }
 
         function renderizarDashboard() {
@@ -136,26 +146,57 @@
             let ingresados = tickets.filter(t => t.usado === true).length;
             let recaudado = tickets.reduce((acc, t) => acc + (t.precio || 0), 0);
 
-            // Actualizar Tarjetas
             document.getElementById("totalVendidos").innerText = vendidos;
             document.getElementById("totalIngresados").innerText = ingresados;
             document.getElementById("totalRecaudado").innerText = "S/ " + recaudado.toFixed(2);
 
-            // Actualizar Gráfica Puerta
-            chartPuerta.data.datasets[0].data = [ingresados, vendidos - ingresados];
-            chartPuerta.update();
+            chartPuerta.data.datasets[0].data = [ingresados, vendidos - ingresados]; chartPuerta.update();
 
-            // Calcular Tipos de Entrada
             let conteoTipos = {};
             tickets.forEach(t => {
                 let tipo = t.tipo || "Desconocido";
                 conteoTipos[tipo] = (conteoTipos[tipo] || 0) + 1;
             });
 
-            // Actualizar Gráfica Barras
             chartTipos.data.labels = Object.keys(conteoTipos);
-            chartTipos.data.datasets[0].data = Object.values(conteoTipos);
-            chartTipos.update();
+            chartTipos.data.datasets[0].data = Object.values(conteoTipos); chartTipos.update();
+        }
+
+        // --- FUNCIÓN PARA EXPORTAR A EXCEL (CSV) ---
+        function exportarCSV() {
+            let eventoSel = document.getElementById("filtroEvento").value;
+            let tickets = eventoSel === "Todos" ? todosLosTickets : todosLosTickets.filter(t => t.evento === eventoSel);
+
+            if (tickets.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+
+            // Cabeceras del Excel
+            let csvContent = "data:text/csv;charset=utf-8,ID,Nombre,Email,Evento,Tipo,Precio (S/),Estado,Fecha Emision,Fecha Ingreso\n";
+
+            tickets.forEach(t => {
+                let id = t.id;
+                let nombre = `"${t.nombre || ''}"`; // Comillas por si el nombre tiene comas
+                let email = t.email || '';
+                let evento = `"${t.evento || ''}"`;
+                let tipo = t.tipo || '';
+                let precio = t.precio || 0;
+                let estado = t.usado ? "Ingreso" : "No Ingreso";
+                let fechaC = t.fecha_creacion ? new Date(t.fecha_creacion).toLocaleString() : '';
+                let fechaU = t.fecha_uso ? new Date(t.fecha_uso).toLocaleString() : 'N/A';
+
+                csvContent += `${id},${nombre},${email},${evento},${tipo},${precio},${estado},${fechaC},${fechaU}\n`;
+            });
+
+            // Crear enlace de descarga y forzar clic
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Reporte_PMC_${eventoSel}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function logout() { sessionStorage.clear(); window.location.href = "login.html"; }

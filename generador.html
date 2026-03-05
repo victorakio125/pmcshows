@@ -28,28 +28,33 @@
         button:hover { background: var(--primary-dark); }
         button:disabled { background: #ccc; cursor: not-allowed; }
         #qrcode { margin: 20px auto; padding: 15px; background: #fff; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: center; width: fit-content; }
-        .volver { display: block; margin-top: 15px; color: var(--secondary-text); text-decoration: none; font-size: 14px; }
+        .volver { display: block; margin-top: 15px; color: var(--text); text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🎟️ Generar Entrada</h2>
+        <h2>🎟️ Forjar Entradas</h2>
         
-        <input type="text" id="nombreCliente" placeholder="Nombre del Cliente" required>
+        <input type="text" id="nombreCliente" placeholder="Nombre del Comprador" required>
         <input type="email" id="emailInput" placeholder="Correo electrónico" required>
         
-        <input type="text" id="eventoInput" list="listaEventos" placeholder="Nombre del Evento (Escribe o selecciona)" required>
+        <input type="text" id="eventoInput" list="listaEventos" placeholder="Nombre del Evento" required>
         <datalist id="listaEventos"></datalist>
 
         <div class="input-group">
-            <input type="text" id="tipoInput" list="listaTipos" placeholder="Tipo (Ej: VIP)" required>
+            <input type="text" id="tipoInput" list="listaTipos" placeholder="Tipo (Ej: General)" required>
             <datalist id="listaTipos"></datalist>
             
             <input type="number" id="precioInput" placeholder="Precio (S/)" required min="0" step="0.50">
         </div>
+
+        <div style="margin-top: 10px; text-align: left;">
+            <label style="font-size: 14px; color: #666; font-weight: bold;">Cantidad de entradas:</label>
+            <input type="number" id="cantidadInput" value="1" min="1" max="10" required>
+        </div>
         
-        <button onclick="generarTicket()">Registrar y Enviar</button>
+        <button onclick="generarTickets()">Generar y Enviar</button>
         
         <div id="qrcode"></div>
         <div id="mensaje" style="font-size: 14px; color: #666; margin-top: 10px;"></div>
@@ -70,11 +75,9 @@
         const db = firebase.firestore();
         emailjs.init("gH9NIWuvDTH_ImtQD");
 
-        // --- AUTOGUARDADO DE EVENTOS Y TIPOS ---
         function cargarSugerencias() {
             let eventos = JSON.parse(localStorage.getItem('savedEventos') || '[]');
             let tipos = JSON.parse(localStorage.getItem('savedTipos') || '[]');
-            
             document.getElementById('listaEventos').innerHTML = eventos.map(e => `<option value="${e}">`).join('');
             document.getElementById('listaTipos').innerHTML = tipos.map(t => `<option value="${t}">`).join('');
         }
@@ -83,54 +86,84 @@
         function guardarSugerencia(evento, tipo) {
             let eventos = JSON.parse(localStorage.getItem('savedEventos') || '[]');
             let tipos = JSON.parse(localStorage.getItem('savedTipos') || '[]');
-            
             if(!eventos.includes(evento)) { eventos.push(evento); localStorage.setItem('savedEventos', JSON.stringify(eventos)); }
             if(!tipos.includes(tipo)) { tipos.push(tipo); localStorage.setItem('savedTipos', JSON.stringify(tipos)); }
             cargarSugerencias();
         }
 
-        function generarTicket() {
+        async function generarTickets() {
             const nombre = document.getElementById('nombreCliente').value.trim();
             const email = document.getElementById('emailInput').value.trim();
             const evento = document.getElementById('eventoInput').value.trim();
             const tipo = document.getElementById('tipoInput').value.trim();
             const precio = parseFloat(document.getElementById('precioInput').value) || 0;
+            const cantidad = parseInt(document.getElementById('cantidadInput').value) || 1;
 
-            if (!nombre || !email || !evento || !tipo) return alert("Completa todos los campos 🤘");
+            if (!nombre || !email || !evento || !tipo || cantidad < 1) {
+                return alert("Faltan datos o la cantidad es inválida 🤘");
+            }
 
             const btn = document.querySelector('button');
-            btn.disabled = true; btn.innerText = "Procesando...";
+            btn.disabled = true; 
+            btn.innerText = `Forjando ${cantidad} entrada(s)...`;
 
-            guardarSugerencia(evento, tipo); // Guarda para la próxima vez
+            guardarSugerencia(evento, tipo);
 
-            db.collection("tickets").add({
-                nombre: nombre,
-                email: email,
-                evento: evento,
-                tipo: tipo,
-                precio: precio,
-                usado: false,
-                fecha_creacion: new Date().toISOString()
-            })
-            .then((docRef) => {
-                document.getElementById("qrcode").innerHTML = "";
-                new QRCode(document.getElementById("qrcode"), { text: docRef.id, width: 150, height: 150 });
-                document.getElementById("mensaje").innerHTML = `ID: ${docRef.id}<br>Enviando email...`;
+            let qrBlockHTML = ""; // Aquí guardaremos todos los QRs
 
+            try {
+                // 1. Crear los tickets en Firebase uno por uno
+                for (let i = 0; i < cantidad; i++) {
+                    document.getElementById("mensaje").innerHTML = `Generando ID ${i + 1} de ${cantidad} en base de datos...`;
+                    
+                    const nombreTicket = cantidad > 1 ? `${nombre} (Entrada ${i + 1} de ${cantidad})` : nombre;
+
+                    const docRef = await db.collection("tickets").add({
+                        nombre: nombreTicket,
+                        email: email,
+                        evento: evento,
+                        tipo: tipo,
+                        precio: precio,
+                        usado: false,
+                        fecha_creacion: new Date().toISOString()
+                    });
+
+                    // Construimos el HTML del QR para agregarlo al correo
+                    qrBlockHTML += `
+                        <div style="margin-bottom: 30px;">
+                            <p style="font-size: 14px; color: #007bff; font-weight: bold; margin-bottom: 10px;">Entrada ${i + 1} de ${cantidad}</p>
+                            // PEGA ESTA LÍNEA (Usando QuickChart):
+                        <img src="https://quickchart.io/qr?text=${docRef.id}&size=180" alt="QR Entrada ${i + 1}" style="border: 10px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; width: 180px; height: 180px; display: block; margin: 0 auto;" />
+                        </div>
+                        <hr style="border: 0; border-top: 1px dashed #e0e0e0; margin: 20px 0;">
+                    `;
+                }
+
+                // 2. Enviar UN SOLO correo con todos los QRs dentro
+                document.getElementById("mensaje").innerHTML = `Enviando correo unificado...`;
+                
                 const templateParams = {
                     name: nombre,
                     email_to: email,
-                    ticket_id: docRef.id,
-                    evento: evento,  // ¡Añadido para el correo!
-                    tipo: tipo,      // ¡Añadido para el correo!
-                    date: new Date().toLocaleDateString()
+                    evento: evento,
+                    tipo: tipo,
+                    date: new Date().toLocaleDateString(),
+                    qr_block: qrBlockHTML // Inyectamos el bloque completo aquí
                 };
 
-                return emailjs.send('service_pmcshow', 'template_dpcy38r', templateParams);
-            })
-            .then(() => alert("✅ Ticket enviado"))
-            .catch(error => console.error(error))
-            .finally(() => { btn.disabled = false; btn.innerText = "Registrar y Enviar"; });
+                await emailjs.send('service_pmcshow', 'template_dpcy38r', templateParams);
+
+                document.getElementById("qrcode").innerHTML = "¡Correo enviado con éxito! ✉️";
+                document.getElementById("mensaje").innerHTML = `Se generó 1 correo con ${cantidad} entradas.`;
+                alert(`✅ ¡Éxito! Se ha enviado 1 correo a ${email} con las ${cantidad} entradas.`);
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("💀 Hubo un error procesando la solicitud. Revisa la consola.");
+            } finally {
+                btn.disabled = false; 
+                btn.innerText = "Generar y Enviar";
+            }
         }
     </script>
 </body>

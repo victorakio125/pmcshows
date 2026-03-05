@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portero Pro - Escáner</title>
+    <title>Portero Pro - Escáner Dark</title>
     
     <script>
         if (!sessionStorage.getItem("rol")) {
@@ -16,18 +16,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
-    /* TEMA: PROFESSIONAL BLUE (Scanner) */
+    /* TEMA: DARK METAL MODE */
     :root {
-        --bg-color: #f4f4f9;
-        --card-bg: #ffffff;
+        --bg-color: #121212;
+        --card-bg: #1e1e1e;
         --primary: #007bff;
-        --text: #333333;
-        --border: #e0e0e0;
-        --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        --text: #e0e0e0;
+        --border: #333333;
+        --shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
 
     body { 
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+        font-family: 'Segoe UI', sans-serif; 
         text-align: center; 
         background-color: var(--bg-color); 
         color: var(--text); 
@@ -48,84 +48,66 @@
         margin-top: 30px;
     }
 
-    h2 { color: var(--text); font-weight: 600; margin-bottom: 25px; }
+    h2 { color: #ffffff; font-weight: 600; margin-bottom: 25px; letter-spacing: 1px; text-transform: uppercase; }
 
     #reader { 
         width: 100%; 
-        background-color: #f8f9fa; 
+        background-color: #000000; 
         border-radius: 8px;
         border: 1px solid var(--border);
         overflow: hidden; 
-        box-shadow: inset 0 0 10px rgba(0,0,0,0.03);
         margin-bottom: 25px;
     }
     
     #reader * { color: var(--text); }
     #reader button { 
-        background: var(--bg-color) !important; border: 1px solid var(--border) !important; 
-        color: var(--text) !important; padding: 8px 12px !important; border-radius: 4px !important; 
+        background: #333333 !important; border: 1px solid #555 !important; 
+        color: white !important; padding: 8px 12px !important; border-radius: 4px !important; 
     }
 
     #resultado { 
         margin-top: 20px; padding: 15px; border-radius: 8px; font-size: 1.1em; font-weight: 500; display: none;
     }
     
-    .exito { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .alerta { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    /* Colores Neón para visibilidad en la oscuridad */
+    .exito { background: rgba(40, 167, 69, 0.1); color: #4ade80; border: 1px solid #28a745; box-shadow: 0 0 10px rgba(40,167,69,0.2); }
+    .error { background: rgba(220, 53, 69, 0.1); color: #ff8a8a; border: 1px solid #dc3545; box-shadow: 0 0 10px rgba(220,53,69,0.2); }
+    .alerta { background: rgba(255, 193, 7, 0.1); color: #ffd859; border: 1px solid #ffc107; box-shadow: 0 0 10px rgba(255,193,7,0.2); }
 
     button#btnReset { 
         width: 100%; padding: 14px; border: none; border-radius: 6px;
-        background-color: var(--text); 
+        background-color: var(--primary); 
         color: white; font-weight: 600; font-size: 16px; cursor: pointer; 
         margin-top: 20px; display: none;
     }
-    button#btnReset:hover { background-color: #000; }
+    button#btnReset:hover { background-color: #0056b3; }
 
     .nombre-gigante {
-        display: block;
-        font-size: 1.8em;    
-        font-weight: 700;    
-        margin: 10px 0;      
-        text-transform: capitalize; 
-        color: #333;          
-        border-bottom: 1px solid rgba(0,0,0,0.1); 
-        padding-bottom: 10px;
+        display: block; font-size: 1.8em; font-weight: 700; margin: 10px 0;      
+        text-transform: capitalize; color: #ffffff;          
+        border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;
     }
-    
-    .exito .nombre-gigante { color: #155724; border-color: #c3e6cb; }
 
-    /* Estilo para el botón de cerrar sesión */
     .btn-logout {
-        margin-top: 30px;
-        background: #dc3545; /* Rojo para indicar salida */
-        color: white;
-        width: 100%;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
+        margin-top: 30px; background: transparent; color: #dc3545; width: 100%;
+        padding: 12px 20px; border: 1px solid #dc3545; border-radius: 6px;
+        font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
     }
-    .btn-logout:hover {
-        background: #c82333;
-    }
+    .btn-logout:hover { background: #dc3545; color: white; }
 </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>👁️‍🗨️ Control de Acceso</h2>
+        <h2>👁️‍🗨️ PMC Access</h2>
         <div id="reader"></div>
         <div id="resultado">Esperando...</div>
-        <button onclick="reiniciarEscaner()" id="btnReset">Siguiente Asistente</button>
+        <button onclick="reiniciarEscaner()" id="btnReset">Escanear Siguiente</button>
 
         <button class="btn-logout" onclick="logout()">Cerrar Sesión 🚪</button>
     </div>
 
     <script>
-        // --- 1. CONFIGURACIÓN FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBOG97oCLCpAAN6fUzHRwkyev1pC_Kdx1I",
             authDomain: "pmcshows-40113.firebaseapp.com",
@@ -138,92 +120,73 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- 2. LÓGICA DEL ESCÁNER ---
         let html5QrcodeScanner;
         let escaneoPausado = false; 
 
-        function onScanSuccess(decodedText, decodedResult) {
+        // 🔊 OBJETOS DE SONIDO (Cargados desde la web)
+        const sonidoExito = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+        const sonidoError = new Audio("https://actions.google.com/sounds/v1/alarms/buzzer_alarm.ogg");
+
+        function onScanSuccess(decodedText) {
             if (escaneoPausado) return;
             escaneoPausado = true; 
-            console.log(`Código detectado: ${decodedText}`);
             verificarTicket(decodedText);
         }
 
-        function onScanFailure(error) {
-            // Ignoramos errores de tracking
-        }
-
-        // --- 3. VERIFICACIÓN CON TEMPORIZADOR ---
         async function verificarTicket(ticketId) {
-            console.log("Iniciando verificación...");
-            
             const resultadoDiv = document.getElementById("resultado");
             const btnReset = document.getElementById("btnReset");
 
             resultadoDiv.style.display = "block";
             resultadoDiv.className = ""; 
-            resultadoDiv.innerHTML = "⏳ Conectando con la base de datos...";
+            resultadoDiv.innerHTML = "⏳ Verificando encriptación...";
             btnReset.style.display = "none";
 
             try {
                 if (!ticketId) throw new Error("QR vacío");
-
                 const docRef = db.collection("tickets").doc(ticketId);
 
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("TIEMPO DE ESPERA AGOTADO: Revisa tu internet")), 5000)
+                    setTimeout(() => reject(new Error("Tiempo de espera agotado")), 5000)
                 );
 
-                const docSnap = await Promise.race([
-                    docRef.get(),
-                    timeoutPromise
-                ]);
+                const docSnap = await Promise.race([ docRef.get(), timeoutPromise ]);
 
                 if (!docSnap.exists) {
-                    mostrarMensaje("❌ TICKET INVÁLIDO<br><small>No existe en el sistema</small>", "error");
+                    sonidoError.play(); // 🔊
+                    mostrarMensaje("❌ TICKET FALSO / INVÁLIDO<br><small>Rechazar ingreso</small>", "error");
                 } else {
                     const data = docSnap.data();
-                    
                     if (data.usado === true) {
+                        sonidoError.play(); // 🔊
                         let hora = "Hora desconocida";
                         try { hora = new Date(data.fecha_uso).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); } catch(e){}
 
                         mostrarMensaje(`
-                            ⚠️ YA REGISTRADO
-                            <div class="nombre-gigante" style="color: #856404">${data.nombre}</div>
-                            <small>Entró a las ${hora}</small>
+                            ⚠️ ALERTA: YA REGISTRADO
+                            <div class="nombre-gigante" style="color: #ffd859">${data.nombre}</div>
+                            <small>Este código ya ingresó a las ${hora}</small>
                         `, "alerta");
                     } else {
-                        await docRef.update({ 
-                            usado: true, 
-                            fecha_uso: new Date().toISOString() 
-                        });
-                        
+                        await docRef.update({ usado: true, fecha_uso: new Date().toISOString() });
+                        sonidoExito.play(); // 🔊
                         mostrarMensaje(`
                             ✅ ACCESO CONCEDIDO
-                            <div class="nombre-gigante">${data.nombre}</div>
-                            <small>✨ Bienvenido al evento ✨</small>
+                            <div class="nombre-gigante" style="color: #4ade80">${data.nombre}</div>
+                            <small>Identidad verificada. Dejar pasar.</small>
                         `, "exito");
                     }
                 }
-
             } catch (error) {
-                console.error("ERROR:", error);
-                
-                let msg = error.message;
-                if (error.code === 'permission-denied') msg = "Permisos denegados (Base de datos cerrada)";
-                if (error.code === 'unavailable') msg = "Sin conexión a internet";
-                
-                mostrarMensaje(`💀 ERROR DE CONEXIÓN<br><small>${msg}</small>`, "error");
+                sonidoError.play(); // 🔊
+                mostrarMensaje(`💀 ERROR DE RED<br><small>${error.message}</small>`, "error");
             }
-            
             btnReset.style.display = "inline-block";
         }
 
         function mostrarMensaje(texto, clase) {
             const div = document.getElementById("resultado");
-            div.innerHTML = texto;
-            div.className = clase;
+            div.innerHTML = texto; div.className = clase;
         }
 
         function reiniciarEscaner() {
@@ -232,19 +195,10 @@
             document.getElementById("btnReset").style.display = "none";
         }
 
-        // --- 4. FUNCIÓN PARA CERRAR SESIÓN ---
-        function logout() {
-            sessionStorage.clear();
-            window.location.href = "login.html";
-        }
+        function logout() { sessionStorage.clear(); window.location.href = "login.html"; }
 
-        // --- 5. INICIAR CÁMARA ---
-        html5QrcodeScanner = new Html5QrcodeScanner(
-            "reader", 
-            { fps: 10, qrbox: {width: 250, height: 250} },
-            false
-        );
-        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+        html5QrcodeScanner.render(onScanSuccess, () => {});
     </script>
 </body>
 </html>
